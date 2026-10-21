@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Ubicaciones - Escape Room Huércal</title>
+  <!-- El CSS del mapa NO bloquea la carga: si unpkg va lento, la página aparece igualmente (el mapa lo necesita solo cuando se dibuja) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""></noscript>
+  <style>
+    :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #ff6b00; --text: #f0f0f0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 20px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    h1 { color: var(--accent); font-size: 1.6rem; text-transform: uppercase; margin-bottom: 5px; }
+    p { color: #aaa; font-size: 0.95rem; }
+    #map { width: 100%; height: 500px; max-height: 70vh; border-radius: 12px; border: 2px solid var(--accent); margin-bottom: 20px; }
+    .locations-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; }
+    .loc-card { background: var(--card); border: 1px solid #333; padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
+    .loc-title { font-weight: bold; color: #fff; font-size: 1rem; margin-bottom: 5px; }
+    .loc-coords { font-size: 0.8rem; color: #888; margin-top: 5px; }
+    .approx { color: #eab308; font-size: 0.75rem; margin-top: 3px; }
+    a.btn-maps { display: inline-block; margin-top: 8px; color: var(--accent); text-decoration: none; font-size: 0.85rem; font-weight: bold; }
+    #map-offline { display: none; text-align: center; color: #f87171; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>La Sombra de Huércal - Ubicaciones Oficiales</h1>
+    <p>Mapa de distribución para el Escape Room de Huércal de Almería</p>
+  </div>
+
+  <div id="map"></div>
+  <p id="map-offline">El mapa necesita conexión a internet. Las tarjetas de abajo siguen funcionando.</p>
+
+  <div class="locations-grid" id="grid"></div>
+
+  <script src="config.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" async onload="window.__leafletReady && window.__leafletReady()"></script>
+  <script>
+    (() => {
+      const CFG = window.ESCAPE_CONFIG;
+      if (!CFG) { document.body.innerHTML = '<p style="padding:24px;color:#ef4444">No se ha podido cargar config.js.</p>'; return; }
+      const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+
+      // Las mismas estaciones que usa el juego (config.js), más la zona de inicio y fin (BASE).
+      const places = CFG.STATIONS.map((s, i) => ({ label: 'Estación ' + (i + 1), name: s.title.replace(/^Estación \d+:\s*/, ''), lat: s.lat, lng: s.lng, approx: !!s.approx }));
+      if (CFG.BASE) places.unshift({ label: 'Inicio y Fin', name: CFG.BASE.name.replace(/^Base:\s*/, ''), lat: CFG.BASE.lat, lng: CFG.BASE.lng, approx: !!CFG.BASE.approx });
+
+      document.getElementById('grid').innerHTML = places.map((p) => `
+        <div class="loc-card">
+          <div class="loc-title">📍 ${esc(p.label)}</div>
+          <div>${esc(p.name)}</div>
+          <div class="loc-coords">Coordenadas: ${p.lat}, ${p.lng}</div>
+          ${p.approx ? '<div class="approx">⚠ Ubicación aproximada</div>' : ''}
+          <a class="btn-maps" href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" rel="noopener">Ver en Google Maps ↗</a>
+        </div>`).join('');
+
+      function drawMap() {
+        const map = L.map('map').setView([36.884, -2.438], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        const bounds = [];
+        places.forEach((p) => {
+          L.marker([p.lat, p.lng]).addTo(map).bindPopup(`<b>${esc(p.label)}</b><br>${esc(p.name)}${p.approx ? '<br><i>ubicación aproximada</i>' : ''}`);
+          bounds.push([p.lat, p.lng]);
+        });
+        map.fitBounds(bounds, { padding: [40, 40] });
+      }
+
+      let drawn = false;
+      window.__leafletReady = () => { if (!drawn && window.L) { drawn = true; drawMap(); } };
+      if (window.L) window.__leafletReady();
+      setTimeout(() => { if (!drawn) { document.getElementById('map').style.display = 'none'; document.getElementById('map-offline').style.display = 'block'; } }, 8000);
+    })();
+  </script>
+</body>
+</html>
