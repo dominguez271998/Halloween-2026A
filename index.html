@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>Escape Room Arboleas - La Maldición</title>
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+  <style>
+    :root {
+      --bg-color: #0d0d0d;
+      --card-bg: #1a1a1a;
+      --accent: #ff6b00;
+      --text: #f0f0f0;
+      --text-muted: #aaa;
+      --success: #22c55e;
+      --warning: #eab308;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 15px;
+      min-height: 100vh;
+    }
+
+    .app-container { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 15px; }
+
+    header { text-align: center; border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+    h1 { color: var(--accent); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
+
+    .timer-badge {
+      font-size: 1.2rem; font-weight: bold; color: #fff; background: #333;
+      padding: 6px 12px; border-radius: 20px; display: inline-block; margin-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tools-bar { display: flex; gap: 8px; margin-bottom: 5px; }
+    .btn-tool {
+      flex: 1; padding: 11px 8px; background: #2a2a2a; color: #fff; border: 1px solid #444;
+      border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-tool:active { opacity: 0.8; }
+
+    .card {
+      background: var(--card-bg); border: 1px solid #333; border-radius: 12px; padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .hidden { display: none !important; }
+
+    .debug-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3000; background: rgba(0,0,0,0.85); color: #9fe870;
+      font: 11px/1.35 ui-monospace, Menlo, monospace; padding: 6px 10px; white-space: pre-wrap; pointer-events: none; }
+
+    label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-muted); }
+
+    input {
+      width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #444;
+      background: #222; color: #fff; font-size: 1rem; margin-bottom: 15px;
+    }
+
+    .privacy-notice { font-size: 0.75rem; color: #888; margin-bottom: 15px; line-height: 1.3; }
+
+    button.btn-primary {
+      width: 100%; padding: 15px; background: var(--accent); color: #000; border: none;
+      border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer;
+      text-transform: uppercase; transition: background 0.2s, opacity 0.2s;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .route-box {
+      background: #262626; border-left: 4px solid var(--accent); padding: 10px 15px;
+      margin: 12px 0; border-radius: 0 8px 8px 0;
+    }
+    .progress-bar { color: var(--warning); font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; }
+
+    .prologue-box {
+      background: linear-gradient(180deg, #16110d 0%, #121212 100%);
+      border: 1px solid rgba(255, 107, 0, 0.35);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 14px 15px;
+      margin: 16px 0 8px;
+      text-align: left;
+    }
+    .prologue-title {
+      color: var(--accent);
+      font-size: 0.95rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .prologue-text p {
+      color: #d6d3d1;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+    .prologue-text p:last-child { margin-bottom: 0; }
+
+    .lore-box {
+      background: #14110f;
+      border: 1px solid #2c221e;
+      border-left: 3px solid #b45309;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      color: #d6d3d1;
+      font-style: italic;
+      font-size: 0.92rem;
+      line-height: 1.48;
+    }
+
+    .mission-box {
+      background: rgba(255, 107, 0, 0.08);
+      border: 1px solid rgba(255, 107, 0, 0.3);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 15px;
+      font-size: 0.94rem;
+      line-height: 1.48;
+      color: #fff;
+      white-space: pre-line;
+    }
+    .mission-label {
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .game-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-story-mini {
+      background: #262626;
+      color: #d6d3d1;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .status-msg { margin-top: 10px; font-weight: bold; text-align: center; min-height: 1.3em; }
+    .error { color: var(--danger); font-size: 0.85rem; margin-bottom: 10px; word-break: break-word; }
+    .status-msg.error { font-size: 1rem; }
+    .success { color: var(--success); }
+    .warn-banner {
+      background: rgba(239, 68, 68, 0.12); border: 1px solid var(--danger); color: #fca5a5;
+      border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; line-height: 1.3;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1); width: 36px; height: 36px; border-radius: 50%;
+      border-left-color: var(--warning); animation: spin 1s linear infinite; margin: 14px auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+      display: flex; justify-content: center; align-items: center; padding: 15px; z-index: 1000;
+    }
+    .modal-content {
+      background: #1a1a1a; border: 1px solid var(--accent); border-radius: 12px;
+      width: 100%; max-width: 420px; padding: 15px; text-align: center;
+      max-height: 90vh; overflow-y: auto;
+    }
+    #map { width: 100%; height: 320px; border-radius: 8px; border: 1px solid #444; margin: 12px 0; }
+
+    .white-overlay {
+      position: fixed; inset: 0; background: #ffffff; z-index: 2000;
+      display: flex; flex-direction: column; justify-content: center; align-items: center; color: #000;
+    }
+
+    .btn-link {
+      background: none; border: none; color: var(--text-muted); text-decoration: underline;
+      font-size: 0.85rem; cursor: pointer; margin-top: 12px; padding: 6px;
+    }
+    .btn-secondary {
+      width: 100%; padding: 12px; background: #2a2a2a; color: #fff; border: 1px solid #444;
+      border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; margin-top: 10px;
+    }
+    a.maps-link { display: inline-block; color: var(--accent); font-weight: bold; font-size: 0.9rem; margin: 6px 0 2px; }
+    .notice { background: rgba(234, 179, 8, 0.12); border: 1px solid var(--warning); color: #fde68a;
+      border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; line-height: 1.3; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <header>
+    <h1>La Maldición de Arboleas</h1>
+    <div id="timer-display" class="timer-badge">Tiempo: --:--</div>
+  </header>
+
+  <div id="gps-warning" class="warn-banner hidden">
+    📍 Este móvil no comparte su ubicación. Activa el permiso de ubicación del navegador para que la organización pueda localizaros si hace falta.
+  </div>
+
+  <!-- BARRA DE HERRAMIENTAS SIN ESCÁNER RA -->
+  <div id="tools-bar" class="tools-bar hidden">
+    <button type="button" class="btn-tool" id="btn-torch">🔦 Linterna</button>
+    <button type="button" class="btn-tool" id="btn-map">🗺️ Mapa Real</button>
+  </div>
+
+  <div id="screen-start" class="card">
+    <h2>Registro de Equipo</h2>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin: 10px 0 15px 0;">
+      La noche de las trece campanadas ha comenzado en Arboleas. Registra a tu grupo para iniciar el ritual.
+    </p>
+
+    <div id="lost-notice" class="notice hidden" style="margin-bottom: 15px;"></div>
+
+    <label for="team-name">Nombre del Equipo:</label>
+    <input type="text" id="team-name" placeholder="Ej: Los Cazafantasmas" maxlength="30" autocomplete="off" autocorrect="off" enterkeyhint="next">
+
+    <label for="team-members">Número de Participantes (mínimo 2, máximo 20):</label>
+    <input type="number" id="team-members" min="2" max="20" value="2" inputmode="numeric" placeholder="2" enterkeyhint="done">
+
+    <p class="privacy-notice">
+      📍 <strong>Aviso de Privacidad:</strong> Al registrarte, permites el envío de la ubicación GPS de tu dispositivo durante la actividad únicamente para la gestión de seguridad y localización en el mapa por parte de la Organización. La ubicación deja de enviarse cuando termináis la partida.
+    </p>
+
+    <div id="register-error" class="error hidden" role="alert"></div>
+    <button type="button" id="btn-start" class="btn-primary">Registrar Equipo</button>
+  </div>
+
+  <div id="screen-wait" class="card hidden" style="text-align: center;">
+    <h2 style="color: var(--warning);">Equipo Registrado</h2>
+    <p id="wait-team-name" style="font-size: 1.3rem; font-weight: bold; margin: 8px 0; color: #fff; word-break: break-word;"></p>
+
+    <div class="spinner"></div>
+
+    <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.4;">
+      Acercaos a la mesa de control de la organización<span id="wait-base"></span> para recibir la salida oficial. <strong>Leed en voz alta la historia mientras esperáis:</strong>
+    </p>
+
+    <div id="wait-prologue-box" class="prologue-box hidden">
+      <div id="wait-prologue-title" class="prologue-title"></div>
+      <div id="wait-prologue-text" class="prologue-text"></div>
+    </div>
+
+    <p id="wait-warning" class="error hidden" style="margin-top: 12px;"></p>
+    <button type="button" id="btn-cancel" class="btn-link">¿Te has equivocado de nombre? Cancelar registro</button>
+  </div>
+
+  <div id="screen-game" class="card hidden">
+    <div class="game-header-row">
+      <h2 id="display-team-name" style="color: var(--accent); word-break: break-word;"></h2>
+      <button type="button" id="btn-open-prologue" class="btn-story-mini">📜 Prólogo</button>
+    </div>
+
+    <div class="route-box">
+      <div id="progress-indicator" class="progress-bar">Sello 1 de 5</div>
+      <strong>Tu destino actual:</strong>
+      <p id="assigned-station" style="font-size: 1.1rem; margin-top: 5px; color: #fff;"></p>
+    </div>
+
+    <div id="station-lore" class="lore-box hidden"></div>
+
+    <div class="mission-box">
+      <span class="mission-label">🕯️ Tu prueba en este lugar:</span>
+      <p id="station-instructions"></p>
+    </div>
+
+    <label for="station-code" id="label-code">Clave del Sello:</label>
+    <input type="text" id="station-code" placeholder="Introduce la respuesta o clave..." autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done">
+
+    <button type="button" id="btn-validate" class="btn-primary">Validar Sello</button>
+    <div id="game-status" class="status-msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <div id="screen-end" class="card hidden" style="text-align: center;">
+    <h2 style="color: var(--success);">¡Maldición Sellada!</h2>
+    <p id="end-epilogue" style="margin: 15px 0; color: #d6d3d1; font-style: italic; font-size: 0.92rem; line-height: 1.45;">
+      Has sellado la amenaza en Arboleas.
+    </p>
+
+    <div style="background: #222; padding: 15px; border-radius: 8px; margin: 15px 0;">
+      <p style="color: var(--text-muted);">Tiempo total del ritual:</p>
+      <p id="final-time" style="font-size: 2rem; font-weight: bold; color: var(--accent);"></p>
+    </div>
+
+    <p style="font-size: 0.85rem; color: var(--text-muted);">
+      Tu tiempo ya consta en la clasificación oficial de supervivientes.
+    </p>
+    <button type="button" id="btn-new-team" class="btn-secondary">Registrar otro equipo en este móvil</button>
+  </div>
+</div>
+
+<div id="modal-prologue" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3 id="modal-prologue-title" style="color: var(--accent); margin-bottom: 10px;">📜 Prólogo</h3>
+    <div id="modal-prologue-text" class="prologue-text" style="text-align: left; margin-bottom: 15px;"></div>
+    <button type="button" class="btn-primary" id="btn-close-prologue">Volver a la Misión</button>
+  </div>
+</div>
+
+<div id="modal-map" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3 style="color: var(--accent);">Mapa de Arboleas</h3>
+    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 3px;">Marcador: tu objetivo actual. Punto azul: tu ubicación.</p>
+
+    <div id="map"></div>
+    <p id="map-loading" class="notice hidden">Cargando el mapa…</p>
+    <p id="map-offline" class="error hidden">El mapa necesita conexión a internet.</p>
+    <a id="map-link" class="maps-link" href="#" target="_blank" rel="noopener">Abrir el objetivo en Google Maps ↗</a>
+
+    <button type="button" class="btn-primary" id="btn-close-map" style="margin-top: 10px;">Cerrar Mapa</button>
+  </div>
+</div>
+
+<div id="modal-white-screen" class="white-overlay hidden">
+  <p style="font-weight: bold; font-size: 1.2rem;">🔦 PANTALLA LINTERNA</p>
+  <p style="font-size: 0.85rem; margin-top: 5px;">Toca en cualquier lugar para cerrar</p>
+</div>
+
+<script src="config.js"></script>
+
+<script>
+(() => {
+  'use strict';
+
+  const CFG = window.ESCAPE_CONFIG;
+  if (!CFG) {
+    document.body.innerHTML = '<p style="padding:24px;color:#ef4444;font-family:sans-serif">No se ha podido cargar config.js. Comprueba que está subido junto a index.html.</p>';
+    return;
+  }
+  const $ = (id) => document.getElementById(id);
+  const STATIONS = CFG.STATIONS;
+  const BASE = CFG.BASE;
+  const STORY = CFG.STORY || {};
+  const TOTAL_STATIONS = STATIONS.length; // 5 estaciones en Arboleas
+  const FINAL_STEP = TOTAL_STATIONS;      // pasos 0-4: estaciones; 5: de vuelta a la base (clave final)
+
+  const POLL_MS = 7000;
+  const GPS_SEND_MS = 15000;
+  const KEY = 'arboleas_v1';
+  const KEY_PENDING = 'arboleas_v1_pending';
+
+  let S = null;
+  let timerId = null, pollTimer = null, lockTimer = null;
+  let busy = false, lockUntil = 0;
+  let gpsWatchId = null, lastGpsSent = 0, curLat = null, curLng = null;
+  let leafletMap = null, stationMarker = null, userMarker = null;
+  let torchStream = null, torchOn = false;
+  let wakeLock = null;
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  function defaultRoute() { return Array.from({ length: TOTAL_STATIONS }, (_, i) => i); }
+
+  function saveSession() { if (S) store.set(KEY, JSON.stringify(S)); }
+  function loadSession() {
+    try {
+      const s = JSON.parse(store.get(KEY) || 'null');
+      if (s && typeof s.team === 'string' && /^[A-Za-z][A-Za-z0-9_-]{7,63}$/.test(s.cid) &&
+          Array.isArray(s.route) && s.route.length === TOTAL_STATIONS && ['wait', 'game', 'end'].includes(s.state)) {
+        s.step = Math.min(FINAL_STEP + 1, Math.max(0, parseInt(s.step, 10) || 0));
+        s.startMs = Number(s.startMs) || 0;
+        s.offset = Number(s.offset) || 0;
+        return s;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function escapeHtml(t) {
+    return String(t ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+  }
+
+  function newToken() {
+    const a = new Uint8Array(16);
+    crypto.getRandomValues(a);
+    return 't' + Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function initStoryTexts() {
+    const paragraphs = Array.isArray(STORY.prologue) ? STORY.prologue : (STORY.prologue ? [STORY.prologue] : []);
+    if (paragraphs.length) {
+      const title = STORY.prologueTitle || '📜 Prólogo';
+      const html = paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('');
+      $('wait-prologue-title').textContent = title;
+      $('wait-prologue-text').innerHTML = html;
+      $('wait-prologue-box').classList.remove('hidden');$('modal-prologue-title').textContent = title;
+      $('modal-prologue-text').innerHTML = html;
+    } else {
+      $('btn-open-prologue').classList.add('hidden');
+    }
+    if (STORY.epilogue) {
+      $('end-epilogue').textContent = STORY.epilogue;
+    }
+  }
+
+  const DEBUG = /[?&]debug\b/.test(location.search);
+  const timings = [];
+  function noteTiming(action, ms, result) {
+    if (!DEBUG) return;
+    timings.unshift(`${action.padEnd(14)} ${(ms / 1000).toFixed(1)} s  ${result}`);
+    timings.length = Math.min(timings.length, 6);
+    let bar = $('debug-bar');
+    if (!bar) { bar = document.createElement('div'); bar.id = 'debug-bar'; bar.className = 'debug-bar'; document.body.appendChild(bar); }
+    bar.textContent = timings.join('\n');
+  }
+
+  async function api(params, timeoutMs) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs || 12000);
+    const t0 = Date.now();
+    let result = 'ERROR';
+    try {
+      const res = await fetch(`${CFG.WEB_APP_URL}?${new URLSearchParams(params)}`, { signal: controller.signal });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch (e) { throw new Error('BAD_RESPONSE'); }
+      if (S && data && typeof data.now === 'number') {
+        S.offset = data.now - (t0 + Date.now()) / 2;
+      }
+      result = data && data.status ? data.status : 'OK';
+      return data;
+    } catch (e) {
+      result = e && e.name === 'AbortError' ? 'TIMEOUT' : 'SIN RED';
+      throw e;
+    } finally { clearTimeout(id); noteTiming(params.action || '?', Date.now() - t0, result); }
+  }
+
+  async function apiRetry(params, timeoutMs, tries, onSlow) {
+    let lastErr = null;
+    for (let i = 0; i < tries; i++) {
+      try {
+        const d = await api(params, timeoutMs);
+        if (d && d.status === 'BUSY' && i < tries - 1) { await sleep(1500 + Math.random() * 1500); continue; }
+        return d;
+      } catch (e) {
+        lastErr = e;
+        if (i < tries - 1 && onSlow) onSlow(i + 2);
+      }
+    }
+    throw lastErr || new Error('SIN_RED');
+  }
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const auth = (extra) => Object.assign({ teamName: S.team, cid: S.cid }, extra);
+  const serverNow = () => Date.now() + (S ? S.offset : 0);
+
+  function showScreen(name) {
+    ['start', 'wait', 'game', 'end'].forEach((n) => $('screen-' + n).classList.toggle('hidden', n !== name));$('tools-bar').classList.toggle('hidden', name !== 'game');
+    if (name !== 'game') $('timer-display').textContent = name === 'end' ? 'Misión cumplida' : 'Tiempo: --:--';
+  }
+
+  function setGameStatus(text, cls) {
+    const el = $('game-status');
+    el.className = 'status-msg' + (cls ? ' ' + cls : '');
+    el.textContent = text;
+  }
+
+  function currentTarget() { return S.step < FINAL_STEP ? STATIONS[S.route[S.step]] : BASE; }
+
+  function updateGameUI() {
+    const target = currentTarget();
+    const final = S.step >= FINAL_STEP;
+    $('display-team-name').textContent = S.team;
+    $('progress-indicator').textContent = final ? '🏁 RITUAL FINAL' : `Sello ${S.step + 1} de ${TOTAL_STATIONS}`;
+    $('progress-indicator').style.color = final ? 'var(--success)' : '';
+    $('assigned-station').textContent = target.title;
+
+    const loreEl = $('station-lore');
+    if (target.lore) {
+      loreEl.textContent = target.lore;
+      loreEl.classList.remove('hidden');
+    } else {
+      loreEl.classList.add('hidden');
+    }
+
+    $('station-instructions').textContent = final
+      ? (BASE.desc || `¡Has completado las ${TOTAL_STATIONS} estaciones! Regresa de inmediato ${BASE.regreso || 'a la base'} con la Organización para sellar tu victoria.`)
+      : target.desc;
+    $('label-code').textContent = final ? 'Código Final de la Organización:' : 'Clave o Respuesta del Sello:';
+    $('station-code').placeholder = final ? 'Introduce el código final...' : 'Escribe aquí tu respuesta...';
+    if (leafletMap) renderTargetOnMap();
+  }
+
+  function enterWait(firstPollMs) {
+    S.state = 'wait'; saveSession();
+    $('wait-team-name').textContent = S.team;
+    $('wait-base').textContent = BASE.salida ? ' ' + BASE.salida : '';
+    $('wait-warning').classList.add('hidden');
+    showScreen('wait');
+    stopTimer();
+    startGPS(); keepAwake(true);
+    schedulePoll(firstPollMs !== undefined ? firstPollMs : 1500);
+  }
+
+  function enterGame() {
+    S.state = 'game'; saveSession();
+    clearTimeout(pollTimer);
+    showScreen('game');
+    updateGameUI();
+    startTimer();
+    startGPS(); keepAwake(true);
+  }
+
+  function enterEnd(finalTime) {
+    S.state = 'end';
+    if (finalTime) S.finalTime = finalTime;
+    saveSession();
+    stopTimer(); clearTimeout(pollTimer); clearInterval(lockTimer);
+    stopGPS(); keepAwake(false);
+    if (torchOn) toggleTorch();
+    toggleMap(false);
+    $('modal-prologue').classList.add('hidden');$('final-time').textContent = S.finalTime || '--';
+    showScreen('end');
+  }
+
+  function clearSession(notice) {
+    stopTimer(); clearTimeout(pollTimer); clearInterval(lockTimer);
+    stopGPS(); keepAwake(false);
+    if (torchOn) toggleTorch();
+    toggleMap(false);
+    $('modal-prologue').classList.add('hidden');
+    const oldName = S ? S.team : '';
+    S = null; store.del(KEY); store.del(KEY_PENDING);
+    lockUntil = 0; curLat = curLng = null;
+    $('btn-start').disabled = false; $('btn-start').textContent = 'Registrar Equipo';
+    $('btn-validate').disabled = false; setGameStatus('', '');$('team-name').value = oldName;
+    const n = $('lost-notice');
+    n.textContent = notice || ''; n.classList.toggle('hidden', !notice);
+    $('register-error').classList.add('hidden');
+    showScreen('start');
+  }
+
+  function sessionLost() {
+    clearSession('La organización no encuentra a vuestro equipo (puede que se haya reiniciado la partida). Registraos de nuevo con el mismo nombre.');
+  }
+
+  function validateName(name) {
+    if (!/^[A-Za-z0-9ÁÉÍÓÚÜáéíóúüÑñ ]{3,30}$/.test(name)) {
+      return 'El nombre debe tener entre 3 y 30 caracteres (solo letras, números y espacios, sin símbolos).';
+    }
+    return null;
+  }
+
+  function showRegisterError(msg) {
+    const e = $('register-error');
+    e.textContent = msg; e.classList.remove('hidden');
+  }
+
+  async function registerTeam() {
+    if (busy) return;
+    const btn = $('btn-start');
+    const name = $('team-name').value.normalize('NFC').replace(/\s+/g, ' ').trim();
+    const members = parseInt($('team-members').value, 10);$('register-error').classList.add('hidden');
+
+    const bad = validateName(name);
+    if (bad) { showRegisterError(bad); return; }
+    if (!(members >= 2 && members <= 20)) { showRegisterError('El número de participantes debe estar entre 2 y 20.'); return; }
+
+    let pend = null;
+    try { pend = JSON.parse(store.get(KEY_PENDING) || 'null'); } catch (e) {}
+    if (!pend || typeof pend.name !== 'string' || pend.name.toLowerCase() !== name.toLowerCase() || !pend.cid) pend = { name, cid: newToken() };
+    store.set(KEY_PENDING, JSON.stringify(pend));
+
+    busy = true; btn.disabled = true; btn.textContent = 'REGISTRANDO EQUIPO...';
+    S = { team: name, cid: pend.cid, route: defaultRoute(), step: 0, state: 'wait', startMs: 0, offset: 0 };
+    let registered = false;
+    const slowTimer = setTimeout(() => { if (busy) btn.textContent = 'CONECTANDO CON EL SERVIDOR…'; }, 4000);
+    try {
+      const d = await apiRetry({ action: 'register', teamName: name, participantCount: members, cid: pend.cid }, 15000, 3,
+        (n) => { btn.textContent = `CONECTANDO CON EL SERVIDOR… (intento ${n} de 3)`; });
+      switch (d.status) {
+        case 'OK':
+          if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route;
+          S.step = d.step || 0;
+          store.del(KEY_PENDING);
+          registered = true;
+          busy = false;
+          if (d.state === 'Pendiente') enterWait(POLL_MS);
+          else await syncStatus(true);
+          return;
+        case 'DUPLICATE': showRegisterError('¡Ese nombre de equipo ya existe! Prueba a cambiar el nombre o añadir una cifra.'); break;
+        case 'INVALID_NAME': showRegisterError('El nombre no es válido. Usa entre 3 y 30 letras, números o espacios.'); break;
+        case 'BAD_WORD': showRegisterError('Ese nombre contiene palabras no permitidas. Por favor, elige otro.'); break;
+        case 'INVALID_COUNT': showRegisterError('El número de participantes debe estar entre 2 y 20.'); break;
+        case 'BUSY': showRegisterError('Hay muchos equipos registrándose a la vez. Espera unos segundos y vuelve a pulsar.'); break;
+        default: showRegisterError('El servidor no ha podido registrar al equipo. Inténtalo de nuevo en un momento.');
+      }
+    } catch (err) {
+      showRegisterError('Sin conexión con el servidor. Vuelve a pulsar "Registrar Equipo": si el registro llegó a hacerse, se recuperará.');
+    } finally {
+      clearTimeout(slowTimer);
+      busy = false;
+      if (!registered) {
+        S = null;
+        btn.disabled = false; btn.textContent = 'Registrar Equipo';
+      }
+    }
+  }
+
+  async function cancelRegistration() {
+    if (!S || busy) return;
+    if (!confirm('¿Cancelar el registro de "' + S.team + '"? Podrás registrarte de nuevo con otro nombre.')) return;
+    busy = true;
+    try {
+      const d = await api({ action: 'cancel', teamName: S.team, cid: S.cid });
+      busy = false;
+      if (d.status === 'OK' || d.status === 'NOT_FOUND' || d.status === 'BAD_TOKEN') { clearSession(''); $('team-name').value = ''; return; }
+      if (d.status === 'NOT_ALLOWED') { await syncStatus(); return; }
+      showWaitWarning('No se pudo cancelar ahora. Inténtalo de nuevo.');
+    } catch (e) {
+      busy = false;
+      showWaitWarning('Sin conexión: no se pudo cancelar. Inténtalo de nuevo.');
+    }
+  }
+
+  function showWaitWarning(msg) { const w = $('wait-warning'); w.textContent = msg; w.classList.remove('hidden'); }
+
+  function schedulePoll(ms) {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(pollLoop, ms !== undefined ? ms : POLL_MS + Math.random() * 2000);
+  }
+
+  async function pollLoop() {
+    if (!S || S.state !== 'wait') return;
+    if (!document.hidden) await syncStatus();
+    if (S && S.state === 'wait') schedulePoll();
+  }
+
+  async function syncStatus(firstTime) {
+    if (!S) return;
+    try {
+      const d = await apiRetry({ action: 'checkStatus', teamName: S.team, cid: S.cid }, 12000, 2);
+      if (!S) return;
+      if (d.status === 'NOT_FOUND' || d.status === 'BAD_TOKEN') { sessionLost(); return; }
+      if (d.status !== 'OK') throw new Error(d.status);
+      $('wait-warning').classList.add('hidden');
+      if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route;
+      S.step = d.step || 0;
+      if (d.state === 'Finalizado') { enterEnd(d.totalTime); return; }
+      if (d.state === 'En curso' && d.startMs) {
+        S.startMs = d.startMs;
+        if (S.state !== 'game' || firstTime) enterGame(); else { saveSession(); updateGameUI(); }
+        return;
+      }
+      if (S.state !== 'wait' || firstTime) enterWait(); else saveSession();
+    } catch (err) {
+      if (firstTime) { enterWait(); showWaitWarning('Sin conexión con el servidor: se reintentará solo.'); }
+      else if (S && S.state === 'wait') showWaitWarning('Sin conexión con el servidor: se reintentará solo.');
+    }
+  }
+
+  function startTimer() {
+    stopTimer();
+    const tick = () => {
+      if (!S) return;
+      const elapsed = Math.max(0, Math.floor((serverNow() - S.startMs) / 1000));
+      $('timer-display').textContent = `Tiempo: ${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+    };
+    tick();
+    timerId = setInterval(tick, 1000);
+  }
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+
+  function startLockCountdown(seconds) {
+    clearInterval(lockTimer);
+    lockUntil = Date.now() + seconds * 1000;
+    const btn = $('btn-validate');
+    const tick = () => {
+      const left = Math.ceil((lockUntil - Date.now()) / 1000);
+      if (left <= 0) {
+        clearInterval(lockTimer); lockUntil = 0; btn.disabled = false;
+        setGameStatus('Ya podéis volver a intentarlo.', '');
+        return;
+      }
+      btn.disabled = true;
+      setGameStatus(`Demasiados intentos fallidos. Esperad ${left} s antes de probar otra vez.`, 'error');
+    };
+    tick();
+    lockTimer = setInterval(tick, 1000);
+  }
+
+  async function validateCode() {
+    if (busy || !S || S.state !== 'game' || lockUntil > Date.now()) return;
+    const input = $('station-code');
+    const code = input.value.trim();
+    if (!code) { setGameStatus('Escribe la clave primero.', 'error'); return; }
+
+    busy = true; $('btn-validate').disabled = true;
+    setGameStatus('Comprobando el sello…', '');
+    let keepDisabled = false;
+    try {
+      const d = await api(auth({ action: 'validate', code, paso: S.step }), 15000);
+      if (!S) return;
+      switch (d.status) {
+        case 'OK':
+          S.step = d.step; saveSession();
+          input.value = '';
+          setGameStatus('¡Sello desbloqueado!', 'success');
+          setTimeout(() => { if (S && S.state === 'game') { setGameStatus('', ''); updateGameUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, 700);
+          break;
+        case 'FINISHED':
+          input.value = '';
+          enterEnd(d.totalTime);
+          break;
+        case 'WRONG':
+          if (d.retry > 0) { startLockCountdown(d.retry); keepDisabled = true; }
+          else setGameStatus(('Respuesta incorrecta. ' + (d.left > 0 ? `Os quedan ${d.left} intento${d.left === 1 ? '' : 's'} antes de una pausa.` : '')).trim(), 'error');
+          break;
+        case 'LOCKED':
+          startLockCountdown(d.retry || 30); keepDisabled = true;
+          break;
+        case 'STEP_MISMATCH':
+          S.step = d.step; if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route; saveSession();
+          input.value = '';
+          updateGameUI();
+          setGameStatus('Vuestra estación se ha actualizado. Revisad el objetivo y probad de nuevo.', 'error');
+          break;
+        case 'NOT_STARTED':
+          setGameStatus('', '');
+          busy = false;
+          await syncStatus();
+          break;
+        case 'NOT_FOUND': case 'BAD_TOKEN':
+          sessionLost(); return;
+        case 'BUSY':
+          setGameStatus('El servidor está ocupado. Probad otra vez en unos segundos.', 'error'); break;
+        default:
+          setGameStatus('Error del servidor. Probad otra vez.', 'error');
+      }
+    } catch (err) {
+      setGameStatus('Sin conexión con la organización. Vuestra respuesta sigue escrita: pulsad de nuevo cuando tengáis cobertura.', 'error');
+    } finally {
+      busy = false;
+      if (!keepDisabled && S && lockUntil <= Date.now()) $('btn-validate').disabled = false;
+    }
+  }
+
+  function startGPS() {
+    if (!('geolocation' in navigator) || gpsWatchId !== null) return;
+    gpsWatchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        $('gps-warning').classList.add('hidden');
+        curLat = pos.coords.latitude; curLng = pos.coords.longitude;
+        if (leafletMap) updateUserMarker(curLat, curLng);
+        maybeSendLocation();
+      },
+      (err) => { if (err.code === 1) $('gps-warning').classList.remove('hidden'); },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 5000 }
+    );
+  }
+  function stopGPS() {
+    if (gpsWatchId !== null) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
+  }
+  function maybeSendLocation() {
+    if (document.hidden || !S || S.state === 'end' || curLat === null) return;
+    const now = Date.now();
+    if (now - lastGpsSent < GPS_SEND_MS) return;
+    lastGpsSent = now;
+    api(auth({ action: 'updateLocation', lat: curLat, lng: curLng }), 10000).then((d) => {
+      if (d && (d.status === 'NOT_FOUND' || d.status === 'BAD_TOKEN')) sessionLost();
+    }).catch(() => {});
+  }
+
+  async function keepAwake(on) {
+    try {
+      if (on && 'wakeLock' in navigator && !wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } else if (!on && wakeLock) { const w = wakeLock; wakeLock = null; await w.release(); }
+    } catch (e) { wakeLock = null; }
+  }
+
+  function mapsUrl(t) { return `https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`; }
+
+  function initMap() {
+    leafletMap = L.map('map').setView([BASE.lat || 37.3512, BASE.lng || -2.0745], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(leafletMap);
+    renderTargetOnMap();
+  }
+
+  function renderTargetOnMap() {
+    if (!leafletMap || !S) return;
+    if (stationMarker) leafletMap.removeLayer(stationMarker);
+    const t = currentTarget();
+    stationMarker = L.marker([t.lat, t.lng]).addTo(leafletMap).bindPopup(`<strong>${escapeHtml(t.title)}</strong>`).openPopup();
+    leafletMap.setView([t.lat, t.lng], 16);
+  }
+
+  function updateUserMarker(lat, lng) {
+    if (!leafletMap) return;
+    if (!userMarker) {
+      userMarker = L.circleMarker([lat, lng], { radius: 10, fillColor: '#3b82f6', color: '#ffffff', weight: 3, opacity: 1, fillOpacity: 0.9 }).addTo(leafletMap);
+      userMarker.bindPopup('<b>🔵 Tu ubicación actual</b>');
+    } else userMarker.setLatLng([lat, lng]);
+  }
+
+  let leafletPromise = null;
+  function loadLeaflet() {
+    if (typeof L !== 'undefined') return Promise.resolve();
+    if (leafletPromise) return leafletPromise;
+    leafletPromise = new Promise((resolve, reject) => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; css.crossOrigin = '';
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; js.crossOrigin = '';
+      const fail = () => { leafletPromise = null; js.remove(); css.remove(); reject(new Error('LEAFLET')); };
+      const timer = setTimeout(fail, 15000);
+      js.onload = () => { clearTimeout(timer); typeof L !== 'undefined' ? resolve() : fail(); };
+      js.onerror = () => { clearTimeout(timer); fail(); };
+      document.head.appendChild(js);
+    });
+    return leafletPromise;
+  }
+
+  async function toggleMap(show) {
+    const modal = $('modal-map');
+    if (!show) { modal.classList.add('hidden'); return; }
+    if (!S) return;
+    modal.classList.remove('hidden');
+    $('map-link').href = mapsUrl(currentTarget());
+    $('map-offline').classList.add('hidden');
+    if (typeof L === 'undefined') {
+      $('map').classList.add('hidden'); $('map-loading').classList.remove('hidden');
+      try { await loadLeaflet(); } catch (e) {
+        $('map-loading').classList.add('hidden'); $('map-offline').classList.remove('hidden');
+        return;
+      }
+      $('map-loading').classList.add('hidden');
+      if (modal.classList.contains('hidden') || !S) return;
+    }
+    $('map').classList.remove('hidden');
+    if (!leafletMap) initMap(); else renderTargetOnMap();
+    setTimeout(() => {
+      if (!leafletMap) return;
+      leafletMap.invalidateSize();
+      if (curLat !== null) updateUserMarker(curLat, curLng);
+    }, 200);
+  }
+
+  function releaseTorch() {
+    if (torchStream) { torchStream.getTracks().forEach((t) => t.stop()); torchStream = null; }
+  }
+
+  async function toggleTorch() {
+    const btn = $('btn-torch');
+    if (!torchOn) {
+      let stream = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+        const track = stream.getVideoTracks()[0];
+        const caps = track.getCapabilities ? track.getCapabilities() : {};
+        if (caps.torch) {
+          await track.applyConstraints({ advanced: [{ torch: true }] });
+          torchStream = stream; torchOn = true;
+          btn.textContent = '🔦 Apagar Linterna';
+          btn.style.background = '#eab308'; btn.style.color = '#000';
+          return;
+        }
+      } catch (e) {}
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      toggleWhiteOverlay(true);
+    } else {
+      releaseTorch();
+      torchOn = false;
+      toggleWhiteOverlay(false);
+      btn.textContent = '🔦 Linterna';
+      btn.style.background = ''; btn.style.color = '';
+    }
+  }
+  function toggleWhiteOverlay(show) { $('modal-white-screen').classList.toggle('hidden', !show); }
+
+  function startNewTeam() {
+    if (!confirm('Esto borra los datos de este equipo en este móvil (su tiempo ya consta en la clasificación). ¿Continuar?')) return;
+    clearSession(''); $('team-name').value = '';
+  }
+
+  function init() {
+    initStoryTexts();
+
+    $('btn-start').addEventListener('click', registerTeam);
+    $('team-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('team-members').focus(); } });
+    $('team-members').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); registerTeam(); } });
+    $('btn-validate').addEventListener('click', validateCode);
+    $('station-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); validateCode(); } });
+    $('btn-cancel').addEventListener('click', cancelRegistration);
+    $('btn-new-team').addEventListener('click', startNewTeam);
+    $('btn-torch').addEventListener('click', toggleTorch);
+    $('btn-map').addEventListener('click', () => toggleMap(true));
+    $('btn-close-map').addEventListener('click', () => toggleMap(false));
+    $('modal-white-screen').addEventListener('click', () => toggleWhiteOverlay(false));
+    $('btn-open-prologue').addEventListener('click', () => $('modal-prologue').classList.remove('hidden'));
+    $('btn-close-prologue').addEventListener('click', () => $('modal-prologue').classList.add('hidden'));
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden || !S) return;
+      keepAwake(S.state === 'wait' || S.state === 'game');
+      if (S.state !== 'end' && !busy) syncStatus();
+    });
+    window.addEventListener('pageshow', (e) => { if (e.persisted && S && S.state !== 'end') syncStatus(); });
+    window.addEventListener('pagehide', releaseTorch);
+
+    S = loadSession();
+    if (!S || S.state !== 'end') api({ action: 'ping' }, 20000).catch(() => {});
+
+    if (!S) { showScreen('start'); }
+    else if (S.state === 'end') { $('final-time').textContent = S.finalTime || '--'; showScreen('end'); }
+    else {
+      if (S.state === 'game' && S.startMs) { showScreen('game'); updateGameUI(); startTimer(); startGPS(); keepAwake(true); }
+      else { showScreen('wait'); $('wait-team-name').textContent = S.team; $('wait-base').textContent = BASE.salida ? ' ' + BASE.salida : ''; startGPS(); keepAwake(true); }
+      syncStatus(true);
+    }
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
