@@ -125,7 +125,7 @@
       border: 1px solid rgba(255, 107, 0, 0.3);
       border-radius: 8px;
       padding: 12px 14px;
-      margin-bottom: 15px;
+      margin-bottom: 14px;
       font-size: 0.94rem;
       line-height: 1.48;
       color: #fff;
@@ -139,6 +139,36 @@
       letter-spacing: 0.06em;
       margin-bottom: 6px;
       display: block;
+    }
+
+    /* Botón y cuadro de Pista a los 5 minutos */
+    .btn-hint {
+      width: 100%;
+      padding: 11px 14px;
+      margin-bottom: 14px;
+      background: rgba(234, 179, 8, 0.16);
+      color: #fde047;
+      border: 1px dashed var(--warning);
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      animation: pulseHint 2s infinite;
+    }
+    @keyframes pulseHint {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.35); }
+      50% { box-shadow: 0 0 12px 2px rgba(234, 179, 8, 0.25); }
+    }
+    .hint-box {
+      background: rgba(234, 179, 8, 0.12);
+      border: 1px solid var(--warning);
+      border-left: 4px solid var(--warning);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      color: #fef08a;
     }
 
     .game-header-row {
@@ -216,7 +246,6 @@
     📍 Este móvil no comparte su ubicación. Activa el permiso de ubicación del navegador para que la organización pueda localizaros si hace falta.
   </div>
 
-  <!-- BARRA DE HERRAMIENTAS SIN ESCÁNER RA -->
   <div id="tools-bar" class="tools-bar hidden">
     <button type="button" class="btn-tool" id="btn-torch">🔦 Linterna</button>
     <button type="button" class="btn-tool" id="btn-map">🗺️ Mapa Real</button>
@@ -281,6 +310,10 @@
       <span class="mission-label">🕯️ Tu prueba en este lugar:</span>
       <p id="station-instructions"></p>
     </div>
+
+    <!-- BOTÓN Y CUADRO DE PISTA (APARECE AUTOMÁTICAMENTE A LOS 5 MINUTOS EN LA MISMA ESTACIÓN) -->
+    <button type="button" id="btn-hint" class="btn-hint hidden">💡 ¿Atascados? Ver pista del sello</button>
+    <div id="hint-box" class="hint-box hidden"></div>
 
     <label for="station-code" id="label-code">Clave del Sello:</label>
     <input type="text" id="station-code" placeholder="Introduce la respuesta o clave..." autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done">
@@ -350,7 +383,8 @@
   const BASE = CFG.BASE;
   const STORY = CFG.STORY || {};
   const TOTAL_STATIONS = STATIONS.length; // 5 estaciones en Arboleas
-  const FINAL_STEP = TOTAL_STATIONS;      // pasos 0-4: estaciones; 5: de vuelta a la base (clave final)
+  const FINAL_STEP = TOTAL_STATIONS;
+  const HINT_DELAY_MS = (CFG.HINT_DELAY_SEC || 300) * 1000; // 5 minutos por defecto
 
   const POLL_MS = 7000;
   const GPS_SEND_MS = 15000;
@@ -364,6 +398,7 @@
   let leafletMap = null, stationMarker = null, userMarker = null;
   let torchStream = null, torchOn = false;
   let wakeLock = null;
+  let hintOpen = false;
 
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -382,6 +417,7 @@
         s.step = Math.min(FINAL_STEP + 1, Math.max(0, parseInt(s.step, 10) || 0));
         s.startMs = Number(s.startMs) || 0;
         s.offset = Number(s.offset) || 0;
+        s.stepStartMs = Number(s.stepStartMs) || Date.now();
         return s;
       }
     } catch (e) {}
@@ -405,7 +441,8 @@
       const html = paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('');
       $('wait-prologue-title').textContent = title;
       $('wait-prologue-text').innerHTML = html;
-      $('wait-prologue-box').classList.remove('hidden');$('modal-prologue-title').textContent = title;
+      $('wait-prologue-box').classList.remove('hidden');
+      $('modal-prologue-title').textContent = title;
       $('modal-prologue-text').innerHTML = html;
     } else {
       $('btn-open-prologue').classList.add('hidden');
@@ -466,7 +503,8 @@
   const serverNow = () => Date.now() + (S ? S.offset : 0);
 
   function showScreen(name) {
-    ['start', 'wait', 'game', 'end'].forEach((n) => $('screen-' + n).classList.toggle('hidden', n !== name));$('tools-bar').classList.toggle('hidden', name !== 'game');
+    ['start', 'wait', 'game', 'end'].forEach((n) => $('screen-' + n).classList.toggle('hidden', n !== name));
+    $('tools-bar').classList.toggle('hidden', name !== 'game');
     if (name !== 'game') $('timer-display').textContent = name === 'end' ? 'Misión cumplida' : 'Tiempo: --:--';
   }
 
@@ -477,6 +515,32 @@
   }
 
   function currentTarget() { return S.step < FINAL_STEP ? STATIONS[S.route[S.step]] : BASE; }
+
+  // Comprueba cada segundo si ya han pasado 5 minutos en la estación actual para mostrar el botón de pista
+  function checkHintVisibility() {
+    const btnHint = $('btn-hint');
+    const hintBox = $('hint-box');
+    if (!S || S.state !== 'game' || S.step >= FINAL_STEP) {
+      btnHint.classList.add('hidden');
+      hintBox.classList.add('hidden');
+      return;
+    }
+    const target = currentTarget();
+    if (!target || !target.hint) {
+      btnHint.classList.add('hidden');
+      hintBox.classList.add('hidden');
+      return;
+    }
+    const elapsedInStep = Date.now() - (S.stepStartMs || Date.now());
+    if (elapsedInStep >= HINT_DELAY_MS) {
+      if (!hintOpen) {
+        btnHint.classList.remove('hidden');
+      }
+    } else {
+      btnHint.classList.add('hidden');
+      hintBox.classList.add('hidden');
+    }
+  }
 
   function updateGameUI() {
     const target = currentTarget();
@@ -499,6 +563,13 @@
       : target.desc;
     $('label-code').textContent = final ? 'Código Final de la Organización:' : 'Clave o Respuesta del Sello:';
     $('station-code').placeholder = final ? 'Introduce el código final...' : 'Escribe aquí tu respuesta...';
+
+    // Reiniciamos el estado visual del cuadro de pista al pintar estación
+    hintOpen = false;
+    $('hint-box').classList.add('hidden');
+    $('hint-box').textContent = target.hint ? `💡 Pista: ${target.hint}` : '';
+    checkHintVisibility();
+
     if (leafletMap) renderTargetOnMap();
   }
 
@@ -514,6 +585,7 @@
   }
 
   function enterGame() {
+    if (!S.stepStartMs) S.stepStartMs = Date.now();
     S.state = 'game'; saveSession();
     clearTimeout(pollTimer);
     showScreen('game');
@@ -530,7 +602,8 @@
     stopGPS(); keepAwake(false);
     if (torchOn) toggleTorch();
     toggleMap(false);
-    $('modal-prologue').classList.add('hidden');$('final-time').textContent = S.finalTime || '--';
+    $('modal-prologue').classList.add('hidden');
+    $('final-time').textContent = S.finalTime || '--';
     showScreen('end');
   }
 
@@ -544,7 +617,8 @@
     S = null; store.del(KEY); store.del(KEY_PENDING);
     lockUntil = 0; curLat = curLng = null;
     $('btn-start').disabled = false; $('btn-start').textContent = 'Registrar Equipo';
-    $('btn-validate').disabled = false; setGameStatus('', '');$('team-name').value = oldName;
+    $('btn-validate').disabled = false; setGameStatus('', '');
+    $('team-name').value = oldName;
     const n = $('lost-notice');
     n.textContent = notice || ''; n.classList.toggle('hidden', !notice);
     $('register-error').classList.add('hidden');
@@ -571,7 +645,8 @@
     if (busy) return;
     const btn = $('btn-start');
     const name = $('team-name').value.normalize('NFC').replace(/\s+/g, ' ').trim();
-    const members = parseInt($('team-members').value, 10);$('register-error').classList.add('hidden');
+    const members = parseInt($('team-members').value, 10);
+    $('register-error').classList.add('hidden');
 
     const bad = validateName(name);
     if (bad) { showRegisterError(bad); return; }
@@ -583,7 +658,7 @@
     store.set(KEY_PENDING, JSON.stringify(pend));
 
     busy = true; btn.disabled = true; btn.textContent = 'REGISTRANDO EQUIPO...';
-    S = { team: name, cid: pend.cid, route: defaultRoute(), step: 0, state: 'wait', startMs: 0, offset: 0 };
+    S = { team: name, cid: pend.cid, route: defaultRoute(), step: 0, state: 'wait', startMs: 0, offset: 0, stepStartMs: Date.now() };
     let registered = false;
     const slowTimer = setTimeout(() => { if (busy) btn.textContent = 'CONECTANDO CON EL SERVIDOR…'; }, 4000);
     try {
@@ -593,6 +668,7 @@
         case 'OK':
           if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route;
           S.step = d.step || 0;
+          S.stepStartMs = Date.now();
           store.del(KEY_PENDING);
           registered = true;
           busy = false;
@@ -656,10 +732,15 @@
       if (d.status !== 'OK') throw new Error(d.status);
       $('wait-warning').classList.add('hidden');
       if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route;
-      S.step = d.step || 0;
+      const newStep = d.step || 0;
+      if (newStep !== S.step) {
+        S.step = newStep;
+        S.stepStartMs = Date.now();
+      }
       if (d.state === 'Finalizado') { enterEnd(d.totalTime); return; }
       if (d.state === 'En curso' && d.startMs) {
         S.startMs = d.startMs;
+        if (S.state !== 'game') S.stepStartMs = Date.now();
         if (S.state !== 'game' || firstTime) enterGame(); else { saveSession(); updateGameUI(); }
         return;
       }
@@ -676,6 +757,7 @@
       if (!S) return;
       const elapsed = Math.max(0, Math.floor((serverNow() - S.startMs) / 1000));
       $('timer-display').textContent = `Tiempo: ${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+      checkHintVisibility();
     };
     tick();
     timerId = setInterval(tick, 1000);
@@ -714,7 +796,9 @@
       if (!S) return;
       switch (d.status) {
         case 'OK':
-          S.step = d.step; saveSession();
+          S.step = d.step;
+          S.stepStartMs = Date.now(); // Reinicia el contador de 5 min para la nueva estación
+          saveSession();
           input.value = '';
           setGameStatus('¡Sello desbloqueado!', 'success');
           setTimeout(() => { if (S && S.state === 'game') { setGameStatus('', ''); updateGameUI(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }, 700);
@@ -731,7 +815,10 @@
           startLockCountdown(d.retry || 30); keepDisabled = true;
           break;
         case 'STEP_MISMATCH':
-          S.step = d.step; if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route; saveSession();
+          S.step = d.step;
+          S.stepStartMs = Date.now();
+          if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route;
+          saveSession();
           input.value = '';
           updateGameUI();
           setGameStatus('Vuestra estación se ha actualizado. Revisad el objetivo y probad de nuevo.', 'error');
@@ -915,6 +1002,13 @@
     $('modal-white-screen').addEventListener('click', () => toggleWhiteOverlay(false));
     $('btn-open-prologue').addEventListener('click', () => $('modal-prologue').classList.remove('hidden'));
     $('btn-close-prologue').addEventListener('click', () => $('modal-prologue').classList.add('hidden'));
+
+    // Al pulsar el botón de pista, oculta el botón y despliega la pista
+    $('btn-hint').addEventListener('click', () => {
+      hintOpen = true;
+      $('btn-hint').classList.add('hidden');
+      $('hint-box').classList.remove('hidden');
+    });
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden || !S) return;
