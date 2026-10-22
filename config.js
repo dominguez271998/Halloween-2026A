@@ -6,7 +6,7 @@
  */
 window.ESCAPE_CONFIG = {
   // ⚠️ RECUERDA: Pon aquí la nueva URL /exec del Google Apps Script de la hoja de Arboleas
-  WEB_APP_URL: "https://script.google.com/macros/s/PON_AQUI_LA_URL_DE_ARBOLEAS/exec",
+  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxUdNYwz0hFX9IyBzbEjm4I2ABqtgKlj6AWbcV2nLDK5MBE_l-6NTpDjzeZGSNsDCafEg/exec",
 
   STORY: {
     prologueTitle: "📜 La Maldición de las Cinco Llaves",
