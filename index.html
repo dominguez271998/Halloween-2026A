@@ -141,6 +141,35 @@
       display: block;
     }
 
+    /* Bloqueo por distancia GPS */
+    .gps-lock-box {
+      background: #1c1614;
+      border: 1px dashed var(--accent);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .gps-lock-title {
+      color: var(--accent);
+      font-weight: bold;
+      font-size: 1rem;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .gps-distance-badge {
+      display: inline-block;
+      margin: 10px 0;
+      padding: 8px 14px;
+      background: #29201b;
+      border: 1px solid #553b2b;
+      border-radius: 20px;
+      color: var(--warning);
+      font-weight: bold;
+      font-size: 0.95rem;
+      font-variant-numeric: tabular-nums;
+    }
+
     /* Botón y cuadro de Pista a los 5 minutos */
     .btn-hint {
       width: 100%;
@@ -222,7 +251,7 @@
 
     .btn-link {
       background: none; border: none; color: var(--text-muted); text-decoration: underline;
-      font-size: 0.85rem; cursor: pointer; margin-top: 12px; padding: 6px;
+      font-size: 0.82rem; cursor: pointer; margin-top: 8px; padding: 4px;
     }
     .btn-secondary {
       width: 100%; padding: 12px; background: #2a2a2a; color: #fff; border: 1px solid #444;
@@ -243,7 +272,7 @@
   </header>
 
   <div id="gps-warning" class="warn-banner hidden">
-    📍 Este móvil no comparte su ubicación. Activa el permiso de ubicación del navegador para que la organización pueda localizaros si hace falta.
+    📍 Este móvil no comparte su ubicación. Activa el permiso de ubicación del navegador para desbloquear las estaciones al acercarte.
   </div>
 
   <div id="tools-bar" class="tools-bar hidden">
@@ -266,7 +295,7 @@
     <input type="number" id="team-members" min="2" max="20" value="2" inputmode="numeric" placeholder="2" enterkeyhint="done">
 
     <p class="privacy-notice">
-      📍 <strong>Aviso de Privacidad:</strong> Al registrarte, permites el envío de la ubicación GPS de tu dispositivo durante la actividad únicamente para la gestión de seguridad y localización en el mapa por parte de la Organización. La ubicación deja de enviarse cuando termináis la partida.
+      📍 <strong>Aviso de Privacidad:</strong> Al registrarte, permites el uso de la ubicación GPS de tu dispositivo durante la actividad para desbloquear las pruebas por cercanía y para la seguridad del evento. La ubicación deja de enviarse al terminar.
     </p>
 
     <div id="register-error" class="error hidden" role="alert"></div>
@@ -299,26 +328,43 @@
     </div>
 
     <div class="route-box">
-      <div id="progress-indicator" class="progress-bar">Sello 1 de 5</div>
+      <div id="progress-indicator" class="progress-bar">Sello 1 de 6</div>
       <strong>Tu destino actual:</strong>
       <p id="assigned-station" style="font-size: 1.1rem; margin-top: 5px; color: #fff;"></p>
     </div>
 
     <div id="station-lore" class="lore-box hidden"></div>
 
-    <div class="mission-box">
-      <span class="mission-label">🕯️ Tu prueba en este lugar:</span>
-      <p id="station-instructions"></p>
+    <!-- BLOQUEO POR PROXIMIDAD GPS (VISIBLE MIENTRAS ESTÁN LEJOS DE LA ESTACIÓN) -->
+    <div id="gps-lock-box" class="gps-lock-box hidden">
+      <div class="gps-lock-title">🔒 Sello Oculto por Distancia</div>
+      <p style="font-size: 0.88rem; color: #ccc; line-height: 1.4;">
+        Debéis desplazaros físicamente hasta la ubicación de esta estación para que el enigma se revele. Usa el <strong>🗺️ Mapa Real</strong> para guiaros.
+      </p>
+      <div id="gps-distance-badge" class="gps-distance-badge">📡 Calculando distancia GPS...</div>
+      <div>
+        <button type="button" id="btn-manual-unlock" class="btn-link">
+          ¿Ya estáis en el punto pero falla vuestro GPS? Desbloquear con código
+        </button>
+      </div>
     </div>
 
-    <!-- BOTÓN Y CUADRO DE PISTA (APARECE AUTOMÁTICAMENTE A LOS 5 MINUTOS EN LA MISMA ESTACIÓN) -->
-    <button type="button" id="btn-hint" class="btn-hint hidden">💡 ¿Atascados? Ver pista del sello</button>
-    <div id="hint-box" class="hint-box hidden"></div>
+    <!-- CONTENIDO DESBLOQUEADO DE LA ESTACIÓN (VISIBLE AL LLEGAR A < 45 METROS) -->
+    <div id="station-unlocked-area">
+      <div class="mission-box">
+        <span class="mission-label">🕯️ Tu prueba en este lugar:</span>
+        <p id="station-instructions"></p>
+      </div>
 
-    <label for="station-code" id="label-code">Clave del Sello:</label>
-    <input type="text" id="station-code" placeholder="Introduce la respuesta o clave..." autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done">
+      <button type="button" id="btn-hint" class="btn-hint hidden">💡 ¿Atascados? Ver pista del sello</button>
+      <div id="hint-box" class="hint-box hidden"></div>
 
-    <button type="button" id="btn-validate" class="btn-primary">Validar Sello</button>
+      <label for="station-code" id="label-code">Clave del Sello:</label>
+      <input type="text" id="station-code" placeholder="Introduce la respuesta o clave..." autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done">
+
+      <button type="button" id="btn-validate" class="btn-primary">Validar Sello</button>
+    </div>
+
     <div id="game-status" class="status-msg" role="status" aria-live="polite"></div>
   </div>
 
@@ -382,14 +428,16 @@
   const STATIONS = CFG.STATIONS;
   const BASE = CFG.BASE;
   const STORY = CFG.STORY || {};
-  const TOTAL_STATIONS = STATIONS.length; // 5 estaciones en Arboleas
+  const TOTAL_STATIONS = STATIONS.length; // 6 estaciones en Arboleas
   const FINAL_STEP = TOTAL_STATIONS;
-  const HINT_DELAY_MS = (CFG.HINT_DELAY_SEC || 300) * 1000; // 5 minutos por defecto
+  const HINT_DELAY_MS = (CFG.HINT_DELAY_SEC || 300) * 1000;
+  const GPS_LOCK_ENABLED = !!CFG.GPS_LOCK;
+  const GPS_RADIUS_M = Number(CFG.GPS_RADIUS_M) || 45;
 
   const POLL_MS = 7000;
   const GPS_SEND_MS = 15000;
-  const KEY = 'arboleas_v1';
-  const KEY_PENDING = 'arboleas_v1_pending';
+  const KEY = 'arboleas_v2';
+  const KEY_PENDING = 'arboleas_v2_pending';
 
   let S = null;
   let timerId = null, pollTimer = null, lockTimer = null;
@@ -418,6 +466,7 @@
         s.startMs = Number(s.startMs) || 0;
         s.offset = Number(s.offset) || 0;
         s.stepStartMs = Number(s.stepStartMs) || Date.now();
+        s.unlockedStep = typeof s.unlockedStep === 'number' ? s.unlockedStep : -1;
         return s;
       }
     } catch (e) {}
@@ -432,6 +481,76 @@
     const a = new Uint8Array(16);
     crypto.getRandomValues(a);
     return 't' + Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Distancia en metros entre dos coordenadas GPS (Fórmula de Haversine)
+  function distanceMeters(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const toRad = (d) => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  }
+
+  function isCurrentStepUnlocked() {
+    if (!S) return false;
+    if (!GPS_LOCK_ENABLED || S.step >= FINAL_STEP) return true;
+    return S.unlockedStep === S.step;
+  }
+
+  function unlockCurrentStep() {
+    if (!S || S.unlockedStep === S.step) return;
+    S.unlockedStep = S.step;
+    S.stepStartMs = Date.now(); // El contador de 5 minutos para la pista empieza al llegar al sitio
+    saveSession();
+    if (navigator.vibrate) navigator.vibrate([180, 80, 180]);
+    updateProximityUI();
+  }
+
+  function updateProximityUI() {
+    if (!S || S.state !== 'game') return;
+    const lockBox = $('gps-lock-box');
+    const unlockedArea = $('station-unlocked-area');
+
+    if (isCurrentStepUnlocked()) {
+      lockBox.classList.add('hidden');
+      unlockedArea.classList.remove('hidden');
+      checkHintVisibility();
+      return;
+    }
+
+    // Si aún no está desbloqueado, comprobamos si ya está dentro del radio GPS
+    const target = currentTarget();
+    if (curLat !== null && curLng !== null && target && typeof target.lat === 'number') {
+      const dist = distanceMeters(curLat, curLng, target.lat, target.lng);
+      if (dist <= GPS_RADIUS_M) {
+        unlockCurrentStep();
+        return;
+      }
+      $('gps-distance-badge').textContent = `📍 Distancia actual al objetivo: ${dist} m (acércate a menos de ${GPS_RADIUS_M} m)`;
+    } else {
+      $('gps-distance-badge').textContent = '📡 Buscando señal GPS de tu móvil...';
+    }
+
+    lockBox.classList.remove('hidden');
+    unlockedArea.classList.add('hidden');
+  }
+
+  function manualUnlockPrompt() {
+    if (!S || S.state !== 'game') return;
+    const target = currentTarget();
+    const code = prompt('Si estás en la ubicación y tu GPS falla, introduce el código de desbloqueo del lugar (o pídelo a la Organización):');
+    if (!code) return;
+    const clean = code.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
+    const expected = (target.unlockCode || 'SELLO').toUpperCase();
+    if (clean === expected || clean === 'ARBOLEAS') {
+      unlockCurrentStep();
+    } else {
+      alert('Código de ubicación incorrecto. Usa el botón "Mapa Real" para acercarte al punto.');
+    }
   }
 
   function initStoryTexts() {
@@ -516,11 +635,10 @@
 
   function currentTarget() { return S.step < FINAL_STEP ? STATIONS[S.route[S.step]] : BASE; }
 
-  // Comprueba cada segundo si ya han pasado 5 minutos en la estación actual para mostrar el botón de pista
   function checkHintVisibility() {
     const btnHint = $('btn-hint');
     const hintBox = $('hint-box');
-    if (!S || S.state !== 'game' || S.step >= FINAL_STEP) {
+    if (!S || S.state !== 'game' || S.step >= FINAL_STEP || !isCurrentStepUnlocked()) {
       btnHint.classList.add('hidden');
       hintBox.classList.add('hidden');
       return;
@@ -564,11 +682,11 @@
     $('label-code').textContent = final ? 'Código Final de la Organización:' : 'Clave o Respuesta del Sello:';
     $('station-code').placeholder = final ? 'Introduce el código final...' : 'Escribe aquí tu respuesta...';
 
-    // Reiniciamos el estado visual del cuadro de pista al pintar estación
     hintOpen = false;
     $('hint-box').classList.add('hidden');
     $('hint-box').textContent = target.hint ? `💡 Pista: ${target.hint}` : '';
-    checkHintVisibility();
+
+    updateProximityUI();
 
     if (leafletMap) renderTargetOnMap();
   }
@@ -658,7 +776,7 @@
     store.set(KEY_PENDING, JSON.stringify(pend));
 
     busy = true; btn.disabled = true; btn.textContent = 'REGISTRANDO EQUIPO...';
-    S = { team: name, cid: pend.cid, route: defaultRoute(), step: 0, state: 'wait', startMs: 0, offset: 0, stepStartMs: Date.now() };
+    S = { team: name, cid: pend.cid, route: defaultRoute(), step: 0, state: 'wait', startMs: 0, offset: 0, stepStartMs: Date.now(), unlockedStep: -1 };
     let registered = false;
     const slowTimer = setTimeout(() => { if (busy) btn.textContent = 'CONECTANDO CON EL SERVIDOR…'; }, 4000);
     try {
@@ -669,6 +787,7 @@
           if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route;
           S.step = d.step || 0;
           S.stepStartMs = Date.now();
+          S.unlockedStep = -1;
           store.del(KEY_PENDING);
           registered = true;
           busy = false;
@@ -736,6 +855,7 @@
       if (newStep !== S.step) {
         S.step = newStep;
         S.stepStartMs = Date.now();
+        S.unlockedStep = -1;
       }
       if (d.state === 'Finalizado') { enterEnd(d.totalTime); return; }
       if (d.state === 'En curso' && d.startMs) {
@@ -783,7 +903,7 @@
   }
 
   async function validateCode() {
-    if (busy || !S || S.state !== 'game' || lockUntil > Date.now()) return;
+    if (busy || !S || S.state !== 'game' || lockUntil > Date.now() || !isCurrentStepUnlocked()) return;
     const input = $('station-code');
     const code = input.value.trim();
     if (!code) { setGameStatus('Escribe la clave primero.', 'error'); return; }
@@ -797,7 +917,8 @@
       switch (d.status) {
         case 'OK':
           S.step = d.step;
-          S.stepStartMs = Date.now(); // Reinicia el contador de 5 min para la nueva estación
+          S.stepStartMs = Date.now();
+          S.unlockedStep = -1; // Bloquea la siguiente estación hasta que lleguen allí
           saveSession();
           input.value = '';
           setGameStatus('¡Sello desbloqueado!', 'success');
@@ -817,6 +938,7 @@
         case 'STEP_MISMATCH':
           S.step = d.step;
           S.stepStartMs = Date.now();
+          S.unlockedStep = -1;
           if (Array.isArray(d.route) && d.route.length === TOTAL_STATIONS) S.route = d.route;
           saveSession();
           input.value = '';
@@ -850,6 +972,7 @@
         $('gps-warning').classList.add('hidden');
         curLat = pos.coords.latitude; curLng = pos.coords.longitude;
         if (leafletMap) updateUserMarker(curLat, curLng);
+        if (S && S.state === 'game') updateProximityUI();
         maybeSendLocation();
       },
       (err) => { if (err.code === 1) $('gps-warning').classList.remove('hidden'); },
@@ -881,7 +1004,7 @@
   function mapsUrl(t) { return `https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`; }
 
   function initMap() {
-    leafletMap = L.map('map').setView([BASE.lat || 37.3512, BASE.lng || -2.0745], 16);
+    leafletMap = L.map('map').setView([BASE.lat || 37.3509, BASE.lng || -2.0758], 16);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -1002,8 +1125,8 @@
     $('modal-white-screen').addEventListener('click', () => toggleWhiteOverlay(false));
     $('btn-open-prologue').addEventListener('click', () => $('modal-prologue').classList.remove('hidden'));
     $('btn-close-prologue').addEventListener('click', () => $('modal-prologue').classList.add('hidden'));
+    $('btn-manual-unlock').addEventListener('click', manualUnlockPrompt);
 
-    // Al pulsar el botón de pista, oculta el botón y despliega la pista
     $('btn-hint').addEventListener('click', () => {
       hintOpen = true;
       $('btn-hint').classList.add('hidden');
