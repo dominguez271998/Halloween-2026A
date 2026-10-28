@@ -84,14 +84,14 @@ window.ESCAPE_CONFIG = {
     },
     {
       id: 5,
-      title: "Estación 6: El Reloj de las Trece Campanadas",
-      name: "Estación 6 (Sexto Sello)",
+      title: "Estación 6: La Carta del Espejo Roto (Sexto Sello)",
+      name: "Estación 6 (La Carta)",
       lat: 37.350917, lng: -2.075833,               // 📍 Exacta: 37°21'03.3"N 2°04'33.0"W
-      unlockCode: "RELOJ",
-      lore: "Habéis llegado al lugar del Sexto Sello. El viejo relojero de Arboleas fue hallado sin vida junto a este punto tras descubrir que la Sombra solo ataca en los intervalos de silencio que quedan entre campanada y campanada.",
-      desc: "Resuelve el enigma del relojero (¡cuidado con la trampa!):\n\n«El reloj maldito tarda exactamente 12 segundos en dar las 4 campanadas de las cuatro de la madrugada (contando desde que suena la primera hasta que suena la cuarta).\n\nSi el tiempo entre una campanada y la siguiente es siempre idéntico… ¿cuántos segundos tardará en dar las 13 campanadas de la medianoche de los muertos?»\n\n(Introduce el número de segundos).",
-      hint: "¡Ojo! Entre 4 campanadas solo hay 3 silencios de espera (12 s ÷ 3 silencios = 4 segundos entre campanada y campanada). Para dar 13 campanadas hay 12 silencios de espera. Multiplica 12 × 4.",
-      staff: "Prueba 6: 37°21'03.3\"N 2°04'33.0\"W (Clave: 48 | Desbloqueo GPS: RELOJ)"
+      unlockCode: "CARTA",
+      lore: "En este rincón de Arboleas apareció el diario de Valeria, la última víctima del aquelarre. Arrancó una página antes de desaparecer y dejó un acertijo múltiple para que solo quien domine la investigación, la lectura en espejo y la lógica pudiera leer su mensaje secreto.",
+      desc: "Sigue estos 3 pasos para extraer la clave oculta en la carta:\n\n1️⃣ ESCRITURA EN ESPEJO (Lee al revés esta nota al pie):\n«.OREDADREV ogitset la osac zaH .DADREV al ecid onu oloS»\n\n2️⃣ LÓGICA (Deduce cuál de los 3 testigos dice la verdad):\n• Testigo A: «El mensaje secreto está uniendo las palabras en MAYÚSCULAS de la carta».\n• Testigo B: «El mensaje secreto está uniendo la primera letra de cada línea».\n• Testigo C: «El Testigo A miente».\n\n3️⃣ CARTA DE VALERIA (Aplica la regla del único testigo verdadero):\n«LA noche cae sobre el pueblo y mi voz se apaga.\nCLAVE mis uñas en la piedra fría buscando salida.\nES imposible escapar cuando las sombras te atrapan;\nPENUMBRA es lo único que aguarda al otro lado.»",
+      hint: "1) El texto en espejo dice: 'Solo uno dice la VERDAD. Haz caso al testigo VERDADERO'. 2) Como A y C se contradicen, uno de ellos dice la verdad y B miente seguro. Si A mintiera, C diría la verdad, pero si A dice la verdad, C y B mienten. ¡El verdadero es el Testigo A! Lee solo las palabras en MAYÚSCULAS de la carta.",
+      staff: "Prueba 6: Carta + Espejo + Lógica (Clave: PENUMBRA | Desbloqueo GPS: CARTA)"
     }
   ],
 
