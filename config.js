@@ -6,7 +6,7 @@
  */
 window.ESCAPE_CONFIG = {
   // ⚠️ Asegúrate de pegar aquí la URL /exec de tu Google Apps Script de Arboleas
-  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxUdNYwz0hFX9IyBzbEjm4I2ABqtgKlj6AWbcV2nLDK5MBE_l-6NTpDjzeZGSNsDCafEg/exec",
+  WEB_APP_URL: "https://script.google.com/macros/s/PON_AQUI_LA_URL_DE_ARBOLEAS/exec",
 
   // Tiempo en segundos para que aparezca el botón de pista tras desbloquear la estación (300 s = 5 minutos)
   HINT_DELAY_SEC: 300,
@@ -75,7 +75,7 @@ window.ESCAPE_CONFIG = {
       id: 4,
       title: "Estación 5: El Epitafio del Sepulturero (C. de La Parra, 1)",
       name: "Estación 5 (C. de La Parra, 1)",
-      lat: 37.350780, lng: -2.074980, approx: true, // 📍 C. de La Parra, 1
+      lat: 37.3522096, lng: -2.0741922,             // 📍 Exacta: C. de La Parra, 1 (37.352209576092434, -2.074192157537636)
       unlockCode: "PARRA",
       lore: "En la Calle de La Parra vivió el viejo sepulturero de Arboleas, quien enloqueció la noche en que escuchó golpes desde el interior de la tierra. Antes de desaparecer, dejó escrita una adivinanza en su pala oxidada.",
       desc: "Adivina la respuesta al enigma del sepulturero:\n\n«Cuanto más me quitas, más grande me vuelvo.\nLos vivos tiemblan al asomarse a mi borde en el cementerio, pero si me llenas de tierra, desaparezco por completo.\n\n¿Qué soy?»\n\n(Escribe una sola palabra como clave).",
