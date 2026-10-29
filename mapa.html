@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa de Ubicaciones - Escape Room Huércal</title>
-  <!-- El CSS del mapa NO bloquea la carga: si unpkg va lento, la página aparece igualmente (el mapa lo necesita solo cuando se dibuja) -->
+  <title>Mapa de Ubicaciones - Escape Room Arboleas</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""></noscript>
   <style>
-    :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #ff6b00; --text: #f0f0f0; }
+    :root { --bg: #0d0d0d; --card: #1a1a1a; --accent: #ff6b00; --green: #22c55e; --text: #f0f0f0; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); padding: 20px; }
     .header { text-align: center; margin-bottom: 20px; }
     h1 { color: var(--accent); font-size: 1.6rem; text-transform: uppercase; margin-bottom: 5px; }
     p { color: #aaa; font-size: 0.95rem; }
-    #map { width: 100%; height: 500px; max-height: 70vh; border-radius: 12px; border: 2px solid var(--accent); margin-bottom: 20px; }
-    .locations-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; }
+    #map { width: 100%; height: 520px; max-height: 70vh; border-radius: 12px; border: 2px solid var(--accent); margin-bottom: 20px; }
+    .locations-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
     .loc-card { background: var(--card); border: 1px solid #333; padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent); }
+    .loc-card.base { border-left-color: var(--green); }
     .loc-title { font-weight: bold; color: #fff; font-size: 1rem; margin-bottom: 5px; }
-    .loc-coords { font-size: 0.8rem; color: #888; margin-top: 5px; }
-    .approx { color: #eab308; font-size: 0.75rem; margin-top: 3px; }
+    .loc-coords { font-size: 0.8rem; color: #888; margin-top: 5px; font-variant-numeric: tabular-nums; }
+    .approx { color: #eab308; font-size: 0.75rem; margin-top: 4px; }
     a.btn-maps { display: inline-block; margin-top: 8px; color: var(--accent); text-decoration: none; font-size: 0.85rem; font-weight: bold; }
     #map-offline { display: none; text-align: center; color: #f87171; margin-bottom: 20px; }
   </style>
@@ -27,8 +27,8 @@
 <body>
 
   <div class="header">
-    <h1>La Sombra de Huércal - Ubicaciones Oficiales</h1>
-    <p>Mapa de distribución para el Escape Room de Huércal de Almería</p>
+    <h1>La Maldición de Arboleas - Mapa Oficial</h1>
+    <p>Distribución de las 6 Estaciones, Radios GPS y Salida/Meta en el Ayuntamiento de Arboleas</p>
   </div>
 
   <div id="map"></div>
@@ -43,28 +43,57 @@
       const CFG = window.ESCAPE_CONFIG;
       if (!CFG) { document.body.innerHTML = '<p style="padding:24px;color:#ef4444">No se ha podido cargar config.js.</p>'; return; }
       const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+      const radiusM = Number(CFG.GPS_RADIUS_M) || 45;
 
-      // Las mismas estaciones que usa el juego (config.js), más la zona de inicio y fin (BASE).
-      const places = CFG.STATIONS.map((s, i) => ({ label: 'Estación ' + (i + 1), name: s.title.replace(/^Estación \d+:\s*/, ''), lat: s.lat, lng: s.lng, approx: !!s.approx }));
-      if (CFG.BASE) places.unshift({ label: 'Inicio y Fin', name: CFG.BASE.name.replace(/^Base:\s*/, ''), lat: CFG.BASE.lat, lng: CFG.BASE.lng, approx: !!CFG.BASE.approx });
+      const places = CFG.STATIONS.map((s, i) => ({
+        label: 'Estación ' + (i + 1),
+        name: s.title.replace(/^Estación \d+:\s*/, ''),
+        lat: s.lat,
+        lng: s.lng,
+        approx: !!s.approx,
+        isBase: false
+      }));
+
+      if (CFG.BASE) {
+        places.unshift({
+          label: '🏁 Inicio y Meta (Mesa de Control)',
+          name: CFG.BASE.name.replace(/^Base:\s*/, ''),
+          lat: CFG.BASE.lat,
+          lng: CFG.BASE.lng,
+          approx: !!CFG.BASE.approx,
+          isBase: true
+        });
+      }
 
       document.getElementById('grid').innerHTML = places.map((p) => `
-        <div class="loc-card">
+        <div class="loc-card${p.isBase ? ' base' : ''}">
           <div class="loc-title">📍 ${esc(p.label)}</div>
           <div>${esc(p.name)}</div>
           <div class="loc-coords">Coordenadas: ${p.lat}, ${p.lng}</div>
-          ${p.approx ? '<div class="approx">⚠ Ubicación aproximada</div>' : ''}
+          ${p.approx ? '<div class="approx">⚠ Ubicación aproximada (confirmar portal con clic derecho en Maps)</div>' : ''}
           <a class="btn-maps" href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" rel="noopener">Ver en Google Maps ↗</a>
         </div>`).join('');
 
       function drawMap() {
-        const map = L.map('map').setView([36.884, -2.438], 15);
+        const map = L.map('map').setView([37.3509, -2.0748], 16);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         const bounds = [];
         places.forEach((p) => {
-          L.marker([p.lat, p.lng]).addTo(map).bindPopup(`<b>${esc(p.label)}</b><br>${esc(p.name)}${p.approx ? '<br><i>ubicación aproximada</i>' : ''}`);
+          L.marker([p.lat, p.lng]).addTo(map).bindPopup(
+            `<b>${esc(p.label)}</b><br>${esc(p.name)}${p.approx ? '<br><i style="color:#d97706">Ubicación aproximada</i>' : ''}`
+          );
+          if (!p.isBase && CFG.GPS_LOCK) {
+            L.circle([p.lat, p.lng], {
+              radius: radiusM,
+              color: '#ff6b00',
+              fillColor: '#ff6b00',
+              fillOpacity: 0.12,
+              weight: 1.5,
+              dashArray: '4,4'
+            }).addTo(map);
+          }
           bounds.push([p.lat, p.lng]);
         });
         map.fitBounds(bounds, { padding: [40, 40] });
