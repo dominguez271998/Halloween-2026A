@@ -6,7 +6,7 @@
  */
 window.ESCAPE_CONFIG = {
   // ⚠️ Asegúrate de pegar aquí la URL /exec de tu Google Apps Script de Arboleas
-  WEB_APP_URL: "https://script.google.com/macros/s/PON_AQUI_LA_URL_DE_ARBOLEAS/exec",
+  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxUdNYwz0hFX9IyBzbEjm4I2ABqtgKlj6AWbcV2nLDK5MBE_l-6NTpDjzeZGSNsDCafEg/exec",
 
   // Tiempo en segundos para que aparezca el botón de pista tras desbloquear la estación (300 s = 5 minutos)
   HINT_DELAY_SEC: 300,
